@@ -20,6 +20,31 @@ from .parsers import format_price, parse_challenge
 USER_AGENT = "list-smith/1.0 (x402 listing grader)"
 
 
+_shared: httpx.AsyncClient | None = None
+
+
+def _shared_client() -> httpx.AsyncClient:
+    """One process-wide client for target probes. Building a fresh
+    AsyncClient per probe (the original shape) threw away the
+    connection pool every call, so each grade/fix paid a new
+    DNS + TCP + TLS handshake to the target host. The shared client
+    keeps connections alive between calls. Timeouts are unchanged:
+    _probe passes its explicit per-request timeout on every call.
+    Callers must NOT close it. (Same fix as token-verdict's shared
+    DEXScreener client, ff05d1c.)"""
+    global _shared
+    if _shared is None or _shared.is_closed:
+        _shared = httpx.AsyncClient(
+            follow_redirects=True,
+            limits=httpx.Limits(
+                max_connections=20,
+                max_keepalive_connections=10,
+                keepalive_expiry=90.0,
+            ),
+        )
+    return _shared
+
+
 async def _probe(client: httpx.AsyncClient, url: str, timeout: float) -> dict:
     """Unauthenticated probe. Tries GET, then POST {} — whichever answer
     carries a 402 is the one we parse."""
@@ -68,33 +93,32 @@ async def inspect_target(
     if parsed.scheme not in ("http", "https") or not parsed.netloc:
         raise ValueError("resource_url must be an http(s) URL")
 
-    own_client = client is None
-    http = client or httpx.AsyncClient(follow_redirects=True)
-    try:
-        probe = await _probe(http, resource_url, timeout)
-        challenge = parse_challenge(probe["status"] or 0, probe["headers"], probe["body"])
-        primary = challenge.primary_accept() if challenge.valid else None
-        terms = {
-            "found": bool(primary),
-            "price_usdc": format_price(
-                primary.amount if primary else None,
-                primary.network if primary else None,
-                primary.asset if primary else None,
-            ),
-            "amount_units": primary.amount if primary else None,
-            "network": primary.network if primary else None,
-            "asset": primary.asset if primary else None,
-            "pay_to": primary.pay_to if primary else None,
-            "scheme": primary.scheme if primary else None,
-            "x402_version": challenge.x402_version,
-        }
-        return {
-            "resource_url": resource_url,
-            "probe": probe,
-            "challenge": challenge,
-            "primary": primary,
-            "terms": terms,
-        }
-    finally:
-        if own_client:
-            await http.aclose()
+    # Default to the shared process-wide client; a caller-injected
+    # client (tests) is used as-is. Either way the client outlives this
+    # call — the old per-request client was closed in a finally block,
+    # which is precisely the pool-churn this fix removes.
+    http = client if client is not None else _shared_client()
+    probe = await _probe(http, resource_url, timeout)
+    challenge = parse_challenge(probe["status"] or 0, probe["headers"], probe["body"])
+    primary = challenge.primary_accept() if challenge.valid else None
+    terms = {
+        "found": bool(primary),
+        "price_usdc": format_price(
+            primary.amount if primary else None,
+            primary.network if primary else None,
+            primary.asset if primary else None,
+        ),
+        "amount_units": primary.amount if primary else None,
+        "network": primary.network if primary else None,
+        "asset": primary.asset if primary else None,
+        "pay_to": primary.pay_to if primary else None,
+        "scheme": primary.scheme if primary else None,
+        "x402_version": challenge.x402_version,
+    }
+    return {
+        "resource_url": resource_url,
+        "probe": probe,
+        "challenge": challenge,
+        "primary": primary,
+        "terms": terms,
+    }
