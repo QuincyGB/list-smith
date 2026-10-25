@@ -98,6 +98,19 @@ validate — unreachable target, no valid challenge, a sample too deep
 or too large to infer from — the route returns `ok: false` with
 `failure` naming why. A broken package is never shipped.
 
+**Modes:** send `"mode": "compact"` for a smaller response whose
+`package` carries the repaired fields only — `description`, `info`
+(the repaired extension info, output schema included), `changes`,
+and the same `validation` — instead of the snippet bundle. It is a
+complete repair product (everything needed to fix the listing is in
+it); full mode, the default, adds the paste-ready meta-schema,
+OpenAPI / well-known snippets, and long-form instructions. Compact
+exists because Settled's discovery extractor silently drops
+published output samples over ~1.5 KB and an honest full-mode
+response (~5 KB) cannot fit under that — so the listing's published
+example is a real compact request/response pair, verified
+byte-for-byte against a fresh fixer run by the test suite.
+
 ## How cataloging works (why the facilitator env matters)
 
 There is no submission form for the x402 indexes. **A listing is a

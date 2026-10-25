@@ -71,6 +71,11 @@ FIX_INPUT_SCHEMA = {
             "type": "string",
             "description": "Optional category (e.g. token-risk, search, data, media, monitoring) used to phrase the description's use-when sentence.",
         },
+        "mode": {
+            "type": "string",
+            "enum": ["full", "compact"],
+            "description": "Optional response mode, default 'full'. 'full' returns the complete package (extension with meta-schema, OpenAPI + well-known snippets, instructions). 'compact' returns the repaired fields only (description, extension info, changes) in a smaller response; the package is validated the same way in both modes.",
+        },
     },
 }
 
@@ -187,6 +192,32 @@ _PACKAGE = {
     },
 }
 
+_VALIDATION = {
+    "type": "object",
+    "required": ["consistency_valid", "spec_valid"],
+    "properties": {
+        "consistency_valid": {"type": "boolean"},
+        "spec_valid": {"type": "boolean"},
+    },
+}
+
+# The compact package (mode="compact"): the repaired fields only. It is
+# derived from the full package after the full extension passed both
+# SDK validators, so `validation` reports that same gate.
+_COMPACT_PACKAGE = {
+    "type": "object",
+    "required": ["inferred_from", "description", "info", "changes", "validation"],
+    "properties": {
+        "inferred_from": {"type": "string", "const": "single_sample"},
+        "description": {"type": "string", "description": "Under 500 chars, with a use-when sentence"},
+        "info": {"type": "object",
+                 "description": "The repaired Bazaar extension info: input carried from the listing, output carrying the sample and the full typed schema inferred from it. Set it as your extension's info and regenerate the extension meta-schema with your x402 SDK (full mode returns it paste-ready)."},
+        "changes": {"type": "array", "items": {"type": "string"},
+                    "description": "What the repair changed, in plain strings"},
+        "validation": _VALIDATION,
+    },
+}
+
 FIX_OUTPUT_SCHEMA = {
     "type": "object",
     "required": ["resource_url", "graded_at", "ok", "failure", "score_before", "defects", "package", "notes"],
@@ -198,8 +229,10 @@ FIX_OUTPUT_SCHEMA = {
                     "description": "Why no package was shipped, when ok is false — an unvalidatable package is never shipped broken"},
         "score_before": {"type": ["integer", "null"], "description": "The /v1/grade score of the listing as found"},
         "defects": {"type": "array", "items": _DEFECT},
-        "package": {"type": ["object", "null"], "properties": _PACKAGE["properties"], "required": _PACKAGE["required"]},
+        "package": {"anyOf": [{"type": "null"}, _PACKAGE, _COMPACT_PACKAGE]},
         "notes": {"type": "array", "items": {"type": "string"}},
+        "mode": {"type": "string", "enum": ["full", "compact"],
+                 "description": "The response mode that produced this result (echo of the request's mode, 'full' when omitted). Present on fix results; the package shape follows it."},
     },
 }
 
@@ -212,9 +245,20 @@ FIX_INPUT_EXAMPLE = {
     "category": "data",
 }
 
+# The listing's example pair is a COMPACT request/response: Settled's
+# extractor silently drops published output samples over ~1.5 KB
+# serialized (measured 2026-10-25: 1,453 B kept, 1,721 B dropped), and
+# an honest full-mode sample cannot fit — its repaired package alone is
+# ~4.3 KB even for a one-field sample. The compact response is a real,
+# complete product (repaired fields only), so its real output is what
+# the listing publishes; full mode stays the default for direct buyers.
+FIX_COMPACT_INPUT_EXAMPLE = {**FIX_INPUT_EXAMPLE, "mode": "compact"}
+
 # Real grader/fixer outputs (grade + fix of a hollow listing, generated
 # by running the actual pipeline against the test fixture) — pinned by
-# tests: each must validate against its output schema above.
+# tests: each must validate against its output schema above, and the
+# compact fix example must equal a fresh compact run on the fixture and
+# stay under Settled's ~1.5 KB published-sample limit.
 GRADE_OUTPUT_EXAMPLE: dict = {'resource_url': 'https://target.example.com/v1/thing',
  'graded_at': '2026-10-21T21:38:16.618483+00:00',
  'reachable': True,
@@ -247,7 +291,7 @@ GRADE_OUTPUT_EXAMPLE: dict = {'resource_url': 'https://target.example.com/v1/thi
  'fix_available': True}
 
 FIX_OUTPUT_EXAMPLE: dict = {'resource_url': 'https://target.example.com/v1/thing',
- 'graded_at': '2026-10-21T21:38:16.624678+00:00',
+ 'graded_at': '2026-10-25T05:23:52.401134+00:00',
  'score_before': 88,
  'defects': [{'name': 'hollow output schema (example only, no typed schema)',
               'severity': 'major',
@@ -397,7 +441,41 @@ FIX_OUTPUT_EXAMPLE: dict = {'resource_url': 'https://target.example.com/v1/thing
            'supplied; review it before shipping, especially arrays (element schemas are merged) '
            'and any field whose real type varies.'],
  'ok': True,
- 'failure': None}
+ 'failure': None,
+ 'mode': 'full'}
+
+FIX_COMPACT_OUTPUT_EXAMPLE: dict = {'resource_url': 'https://target.example.com/v1/thing',
+ 'graded_at': '2026-10-25T05:23:52.455109+00:00',
+ 'score_before': 88,
+ 'defects': [{'name': 'hollow output schema (example only, no typed schema)',
+              'severity': 'major',
+              'detail': 'info.output carries only type/example — the hollow shape 87.8% of '
+                        'listings ship. No field is typed, so a buyer cannot validate a '
+                        'response.'}],
+ 'package': {'inferred_from': 'single_sample',
+             'description': 'Target Thing — returns verdict, score. Use when you need structured '
+                            'data inside an agent workflow. $0.02 per call in USDC on Base via '
+                            'x402.',
+             'info': {'input': {'type': 'http',
+                                'method': 'POST',
+                                'bodyType': 'json',
+                                'body': {'thing_id': 'abc'}},
+                      'output': {'type': 'json',
+                                 'example': {'verdict': 'OK', 'score': 12},
+                                 'schema': {'type': 'object',
+                                            'properties': {'verdict': {'type': 'string'},
+                                                           'score': {'type': 'integer'}},
+                                            'required': ['verdict', 'score']}}},
+             'changes': ['description rewritten (139 chars, sub-500, with a use-when sentence)',
+                         'output schema inferred from sample (verdict, score)'],
+             'validation': {'consistency_valid': True, 'spec_valid': True}},
+ 'notes': ['compact: fields only — set route description = package.description, extension info = '
+           'package.info (meta-schema via your x402 SDK); full mode returns snippets + '
+           'instructions.',
+           'inferred_from: single_sample — review inferred schema before shipping.'],
+ 'ok': True,
+ 'failure': None,
+ 'mode': 'compact'}
 
 
 def bazaar_extension(input_schema: dict, output_schema: dict,
@@ -458,7 +536,7 @@ def grade_extension() -> dict:
 
 def fix_extension() -> dict:
     return bazaar_extension(FIX_INPUT_SCHEMA, FIX_OUTPUT_SCHEMA,
-                            FIX_INPUT_EXAMPLE, FIX_OUTPUT_EXAMPLE)
+                            FIX_COMPACT_INPUT_EXAMPLE, FIX_COMPACT_OUTPUT_EXAMPLE)
 
 
 def x402_manifest(settings: Settings, base_url: str) -> dict:
@@ -519,13 +597,14 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
                 "mimeType": "application/json",
                 "description": (
                     "Repair one x402 route's discovery metadata: a "
-                    "complete Bazaar extension with a full output schema "
-                    "inferred from your sample, a sub-500-char description "
-                    "with a use-when sentence, OpenAPI and well-known "
-                    "snippets, and paste-in instructions. The package "
-                    "ships only if it passes both x402 SDK validators. "
-                    "Use this when your listing is hollow, invalid, or "
-                    "invisible and you want it fixed in one call."
+                    "Bazaar extension with a full output schema inferred "
+                    "from your sample, a sub-500-char description with a "
+                    "use-when sentence, OpenAPI and well-known snippets, "
+                    "and paste-in instructions. Send mode 'compact' for "
+                    "the repaired fields only (description, extension "
+                    "info, changes) in a smaller response. Ships only if "
+                    "it passes both x402 SDK validators. Use this when "
+                    "your listing is hollow, invalid, or invisible."
                 ),
                 "tags": ["x402", "bazaar", "repair", "schema", "discovery", "agents"],
                 "accepts": accepts(settings.fix_price_usdc),
@@ -567,9 +646,10 @@ and `fix_available`. No repaired content — that is the other route.
 ### `POST {base_url}/v1/fix` — {settings.fix_price_usdc} USDC
 
 Body: `resource_url` (required), `sample_output` (required — one real
-response body), `name` / `category` (optional).
+response body), `name` / `category` (optional), `mode` (optional:
+`"full"` default, or `"compact"`).
 
-Returns the grade report plus `package`:
+Returns the grade report plus `package`. In full mode (the default):
 - `extension` — a complete Bazaar discovery extension; the output
   schema is inferred from your sample (every sampled field typed, no
   invented fields), marked `"inferred_from": "single_sample"`
@@ -579,6 +659,15 @@ Returns the grade report plus `package`:
 - `instructions` — how to ship it with the standard x402 middleware
 - `validation` — the package ships ONLY if it passed both SDK
   validators; otherwise `ok` is false and `failure` names why
+
+In compact mode the response is smaller and `package` carries the
+repaired fields only: `description`, `info` (the repaired extension
+info — set it as your extension's `info` and regenerate the extension
+meta-schema with your x402 SDK), `changes` (what the repair changed),
+and the same `validation`. Everything needed to repair the listing is
+in the compact response; full mode adds the paste-ready snippets,
+the meta-schema, and long-form instructions. Same price, same
+validation gate, either mode.
 
 ## Free endpoints
 
@@ -605,7 +694,7 @@ Paid API: listing grades & repairs for x402 services (Bazaar discovery metadata)
 ## Endpoints
 
 - POST {base_url}/v1/grade — {settings.grade_price_usdc} USDC. Body: {{"resource_url": str, "sample_output"?: any}}
-- POST {base_url}/v1/fix — {settings.fix_price_usdc} USDC. Body: {{"resource_url": str, "sample_output": any, "name"?: str, "category"?: str}}
+- POST {base_url}/v1/fix — {settings.fix_price_usdc} USDC. Body: {{"resource_url": str, "sample_output": any, "name"?: str, "category"?: str, "mode"?: "full"|"compact"}} — full (default) returns the complete snippet package; compact returns the repaired fields only (description, extension info, changes)
 - GET {base_url}/quote — free price quote
 - GET {base_url}/health — free liveness check
 - GET {base_url}/.well-known/x402 — manifest

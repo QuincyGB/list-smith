@@ -19,6 +19,8 @@ from fastapi.testclient import TestClient
 import app.main as main
 from app.config import Settings, load_settings
 from app.discovery import (
+    FIX_COMPACT_INPUT_EXAMPLE,
+    FIX_COMPACT_OUTPUT_EXAMPLE,
     FIX_INPUT_SCHEMA,
     FIX_OUTPUT_EXAMPLE,
     FIX_OUTPUT_SCHEMA,
@@ -143,10 +145,17 @@ def test_output_schemas_type_every_field():
         "defects", "package", "notes",
     }
     pkg = FIX_OUTPUT_SCHEMA["properties"]["package"]
-    assert set(pkg["required"]) == {
-        "inferred_from", "description", "extension", "openapi_snippet",
-        "well_known_snippet", "instructions", "validation",
+    branches = {frozenset(b["required"]) for b in pkg["anyOf"] if "required" in b}
+    assert {"type": "null"} in pkg["anyOf"]  # honest failures ship package: null
+    assert branches == {
+        frozenset({
+            "inferred_from", "description", "extension", "openapi_snippet",
+            "well_known_snippet", "instructions", "validation",
+        }),
+        frozenset({"inferred_from", "description", "info", "changes", "validation"}),
     }
+    assert FIX_OUTPUT_SCHEMA["properties"]["mode"]["enum"] == ["full", "compact"]
+    assert FIX_INPUT_SCHEMA["properties"]["mode"]["enum"] == ["full", "compact"]
     # Schemas are reachable from the extensions themselves, not hollow.
     assert grade_extension()["info"]["output"]["schema"] == GRADE_OUTPUT_SCHEMA
     assert fix_extension()["info"]["output"]["schema"] == FIX_OUTPUT_SCHEMA
@@ -159,11 +168,55 @@ def test_examples_are_real_and_validate():
     assert FIX_OUTPUT_EXAMPLE, "fix example must be a real fixer output"
     jsonschema.validate(instance=GRADE_OUTPUT_EXAMPLE, schema=GRADE_OUTPUT_SCHEMA)
     jsonschema.validate(instance=FIX_OUTPUT_EXAMPLE, schema=FIX_OUTPUT_SCHEMA)
+    jsonschema.validate(instance=FIX_COMPACT_OUTPUT_EXAMPLE, schema=FIX_OUTPUT_SCHEMA)
     assert GRADE_OUTPUT_EXAMPLE["resource_url"] == "https://target.example.com/v1/thing"
     assert FIX_OUTPUT_EXAMPLE["ok"] is True
+    assert FIX_OUTPUT_EXAMPLE["mode"] == "full"
     assert FIX_OUTPUT_EXAMPLE["package"]["validation"] == {
         "consistency_valid": True, "spec_valid": True,
     }
+    # The listing publishes the compact pair: a compact request and its
+    # real response (see the Settled sample-size note in discovery.py).
+    assert FIX_COMPACT_OUTPUT_EXAMPLE["ok"] is True
+    assert FIX_COMPACT_OUTPUT_EXAMPLE["mode"] == "compact"
+    assert FIX_COMPACT_INPUT_EXAMPLE["mode"] == "compact"
+    assert fix_extension()["info"]["input"]["body"] == FIX_COMPACT_INPUT_EXAMPLE
+    assert fix_extension()["info"]["output"]["example"] == FIX_COMPACT_OUTPUT_EXAMPLE
+
+
+def test_compact_example_equals_fresh_compact_run():
+    """The published compact example is not hand-maintained prose: it
+    must equal what the fixer actually returns for the published
+    compact input on the fixture target (timestamps aside)."""
+    import asyncio
+
+    from app.fixer import run_fix
+    from tests.fixtures import challenge, make_client
+
+    inp = FIX_COMPACT_INPUT_EXAMPLE
+    result = asyncio.run(
+        run_fix(
+            inp["resource_url"],
+            inp["sample_output"],
+            name=inp["name"],
+            category=inp["category"],
+            mode="compact",
+            client=make_client(challenge(extension="hollow")),
+        )
+    )
+    strip = lambda d: {k: v for k, v in d.items() if k != "graded_at"}  # noqa: E731
+    assert strip(result) == strip(FIX_COMPACT_OUTPUT_EXAMPLE)
+
+
+def test_compact_example_under_settled_sample_limit():
+    """Settled's extractor silently drops published output samples over
+    ~1.5 KB serialized (measured 2026-10-25: RouteVerdict's 1,453 B
+    sample kept and graded as_advertised; Token Verdict's 1,721 B and
+    this route's 4,972 B full-mode sample dropped -> nothing_to_compare).
+    The published compact sample must stay under the kept side."""
+    import json
+
+    assert len(json.dumps(FIX_COMPACT_OUTPUT_EXAMPLE).encode()) <= 1450
 
 
 # --- discovery surfaces ------------------------------------------------------------

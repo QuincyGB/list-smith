@@ -20,6 +20,14 @@ HARD GATE: the generated extension must pass BOTH x402 SDK validators
 (validate_discovery_extension and validate_discovery_extension_spec)
 before it is returned. A package that cannot be made to validate is
 returned as an honest failure naming why — never shipped broken.
+
+Modes: "full" (default) returns the complete package above.
+"compact" returns the repaired fields only — description, the
+repaired extension info, and a changes list — derived from the full
+package after the same validation gate. It exists because discovery
+extraction (Settled's, measured 2026-10-25) silently drops published
+output samples over ~1.5 KB, and an honest full-mode response cannot
+fit under that; compact is a complete repair product, not a teaser.
 """
 
 from __future__ import annotations
@@ -286,9 +294,54 @@ def _instructions(terms: dict, notes_context: dict) -> str:
     return "\n".join(lines)
 
 
-def build_fix(inspection: dict, sample_output: object, name: str | None, category: str | None) -> dict:
+def _compact_package(package: dict, sample_output: object, input_assumed: bool) -> dict:
+    """The compact package: the repaired fields a seller applies
+    directly — the generated description, the repaired Bazaar
+    extension info (input carried from their listing, output schema
+    inferred from the sample) and a plain list of what changed. It is
+    derived from the full package only AFTER that package's extension
+    passed both SDK validators, so compact mode is held to the same
+    gate; what it omits is the paste-ready snippet bundle (OpenAPI /
+    well-known snippets, the extension meta-schema, long-form
+    instructions), which the default full mode returns."""
+    description = package["description"]
+    changes = [
+        f"description rewritten ({len(description)} chars, sub-500, with a use-when sentence)"
+    ]
+    if isinstance(sample_output, dict) and sample_output:
+        keys = ", ".join(list(sample_output.keys())[:5])
+        more = f" +{len(sample_output) - 5} more" if len(sample_output) > 5 else ""
+        changes.append(f"output schema inferred from sample ({keys}{more})")
+    elif isinstance(sample_output, list):
+        changes.append("output schema inferred from sample (JSON array)")
+    else:
+        changes.append("output schema inferred from sample")
+    if input_assumed:
+        changes.append("input: none published — POST JSON body assumed (see notes)")
+    return {
+        "inferred_from": package["inferred_from"],
+        "description": description,
+        "info": package["extension"]["info"],
+        "changes": changes,
+        "validation": package["validation"],
+    }
+
+
+def build_fix(
+    inspection: dict,
+    sample_output: object,
+    name: str | None,
+    category: str | None,
+    mode: str = "full",
+) -> dict:
     """Grade, then generate + validate the package. Pure given the
-    inspection — run_fix does the network work."""
+    inspection — run_fix does the network work.
+
+    mode="full" (default) returns the complete package; mode="compact"
+    returns the repaired fields only (see _compact_package). The full
+    extension is built and validated either way."""
+    if mode not in ("full", "compact"):
+        raise ValueError(f"mode must be 'full' or 'compact' (got {mode!r})")
     resource_url = inspection["resource_url"]
     grade = grade_inspection(inspection, sample_output=sample_output)
     base = {
@@ -301,7 +354,7 @@ def build_fix(inspection: dict, sample_output: object, name: str | None, categor
     }
 
     def fail(reason: str) -> dict:
-        return {**base, "ok": False, "failure": reason}
+        return {**base, "ok": False, "failure": reason, "mode": mode}
 
     if sample_output is None:
         return fail("sample_output is required for /v1/fix and must be one real response body (got null).")
@@ -395,7 +448,29 @@ def build_fix(inspection: dict, sample_output: object, name: str | None, categor
         )
     if input_note:
         notes.append(input_note)
-    return {**base, "ok": True, "failure": None, "package": package, "notes": notes}
+    if mode == "compact":
+        compact_notes = [
+            "compact: fields only — set route description = package.description, "
+            "extension info = package.info (meta-schema via your x402 SDK); "
+            "full mode returns snippets + instructions.",
+            "inferred_from: single_sample — review inferred schema before shipping.",
+        ]
+        if _contains_null(sample_output):
+            compact_notes.append(
+                "Fields null in the sample were left untyped ({}) — set the type yourself "
+                "if you know it."
+            )
+        if input_note:
+            compact_notes.append(input_note)
+        return {
+            **base,
+            "ok": True,
+            "failure": None,
+            "package": _compact_package(package, sample_output, input_note is not None),
+            "notes": compact_notes,
+            "mode": "compact",
+        }
+    return {**base, "ok": True, "failure": None, "package": package, "notes": notes, "mode": "full"}
 
 
 async def run_fix(
@@ -403,8 +478,11 @@ async def run_fix(
     sample_output: object,
     name: str | None = None,
     category: str | None = None,
+    mode: str = "full",
     client: httpx.AsyncClient | None = None,
     timeout: float = 10.0,
 ) -> dict:
+    if mode not in ("full", "compact"):
+        raise ValueError(f"mode must be 'full' or 'compact' (got {mode!r})")
     inspection = await inspect_target(resource_url, client=client, timeout=timeout)
-    return build_fix(inspection, sample_output, name, category)
+    return build_fix(inspection, sample_output, name, category, mode=mode)

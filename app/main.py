@@ -92,13 +92,14 @@ GRADE_DESCRIPTION = (
 )
 
 FIX_DESCRIPTION = (
-    "Repair one x402 route's Bazaar discovery metadata in one call. "
-    "Send a resource URL and one real sample output; get the defect "
-    "report plus a complete discovery package — full output schema "
-    "inferred from the sample, a sub-500-char description with a "
-    "use-when sentence, OpenAPI and well-known snippets, paste-in "
-    "instructions — that ships only after passing both x402 SDK "
-    "validators. Use this when your listing is hollow, invalid, or "
+    "Repair one x402 route's Bazaar discovery metadata. Send a "
+    "resource URL and one real sample; get the defect report plus "
+    "a package that ships only after passing both x402 SDK "
+    "validators: full output schema inferred from the sample, a "
+    "sub-500-char description with a use-when sentence, OpenAPI "
+    "and well-known snippets, instructions. Mode 'compact' returns "
+    "the repaired fields only (description, extension info, "
+    "changes). Use this when your listing is hollow, invalid, or "
     "invisible in the Bazaar."
 )
 
@@ -186,6 +187,10 @@ class FixRequest(BaseModel):
     sample_output: Any = Field(description="One real response body from the endpoint (required)")
     name: str | None = Field(default=None, description="Display name for the generated description")
     category: str | None = Field(default=None, description="Category for the use-when sentence")
+    mode: str = Field(
+        default="full",
+        description="'full' (default) returns the complete package; 'compact' returns the repaired fields only (description, extension info, changes)",
+    )
 
 
 def _public_base(request: Request) -> str:
@@ -366,6 +371,7 @@ async def fix(req: FixRequest):
             req.sample_output,
             name=req.name,
             category=req.category,
+            mode=req.mode,
             timeout=settings.fetch_timeout_s,
         )
     except ValueError as e:

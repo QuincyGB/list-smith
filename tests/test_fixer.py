@@ -134,6 +134,53 @@ def test_fix_snippets_are_consistent():
     assert "extensions=" in pkg["instructions"]
 
 
+def test_fix_default_mode_is_full():
+    result = fix(TARGET_URL, make_client(challenge(extension="hollow")))
+    assert result["mode"] == "full"
+    assert "extension" in result["package"]
+
+
+def test_fix_compact_mode_returns_repaired_fields_only():
+    compact = fix(TARGET_URL, make_client(challenge(extension="hollow")), mode="compact")
+    jsonschema.validate(instance=compact, schema=FIX_OUTPUT_SCHEMA)
+    assert compact["ok"] is True
+    assert compact["mode"] == "compact"
+    assert compact["score_before"] == 88
+    pkg = compact["package"]
+    assert set(pkg) == {"inferred_from", "description", "info", "changes", "validation"}
+    assert pkg["validation"] == {"consistency_valid": True, "spec_valid": True}
+    # The compact info is exactly the full mode's validated extension
+    # info, and the description is the same generated one — compact is
+    # the same repair, minus the snippet bundle.
+    full = fix(TARGET_URL, make_client(challenge(extension="hollow")))
+    assert pkg["info"] == full["package"]["extension"]["info"]
+    assert pkg["description"] == full["package"]["description"]
+    # Complete product: the sample validates against the inferred
+    # schema the compact response carries, and changes say what moved.
+    jsonschema.validate(instance=SAMPLE, schema=pkg["info"]["output"]["schema"])
+    assert set(pkg["info"]["output"]["schema"]["properties"]) == set(SAMPLE)
+    assert any(c.startswith("description rewritten") for c in pkg["changes"])
+    assert any(c.startswith("output schema inferred") for c in pkg["changes"])
+    # The null-in-sample caveat survives in compact notes.
+    assert any("null in the sample" in n for n in compact["notes"])
+
+
+def test_fix_compact_mode_failure_is_honest():
+    result = fix(TARGET_URL, unreachable_client(), mode="compact")
+    jsonschema.validate(instance=result, schema=FIX_OUTPUT_SCHEMA)
+    assert result["ok"] is False
+    assert result["package"] is None
+    assert result["mode"] == "compact"
+    assert "unreachable" in result["failure"]
+
+
+def test_fix_invalid_mode_rejected():
+    import pytest
+
+    with pytest.raises(ValueError):
+        fix(TARGET_URL, make_client(challenge()), mode="tiny")
+
+
 def test_fix_unreachable_is_honest_failure():
     result = fix(TARGET_URL, unreachable_client())
     jsonschema.validate(instance=result, schema=FIX_OUTPUT_SCHEMA)
