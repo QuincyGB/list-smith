@@ -28,6 +28,7 @@ for _var in ("no_proxy", "NO_PROXY"):
         os.environ[_var] = ",".join(_kept)
 
 from fastapi import FastAPI, Request
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import HTMLResponse, JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from x402.http import FacilitatorConfig, HTTPFacilitatorClient, PaymentOption, RouteConfig
@@ -37,6 +38,7 @@ from x402.server import x402ResourceServer
 
 from .config import load_settings
 from .discovery import (
+    OWNERSHIP_PROOFS,
     fix_extension,
     grade_extension,
     llms_txt,
@@ -137,6 +139,23 @@ routes = {
 
 # --- app ---------------------------------------------------------------------
 app = FastAPI(title="list-smith", version="1.0.0")
+
+
+def _openapi_with_ownership_proofs():
+    """Default OpenAPI document plus the x402scan ownership-proof root
+    keys (x-discovery / x-agentcash-provenance). x402scan reads these to
+    verify control of the payTo address — see OWNERSHIP_PROOFS in
+    discovery.py; removing them un-verifies the listing."""
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(title=app.title, version=app.version, routes=app.routes)
+    schema["x-discovery"] = {"ownershipProofs": OWNERSHIP_PROOFS}
+    schema["x-agentcash-provenance"] = {"ownershipProofs": OWNERSHIP_PROOFS}
+    app.openapi_schema = schema
+    return schema
+
+
+app.openapi = _openapi_with_ownership_proofs
 
 # Build the payment middleware ONCE. Constructing it runs the SDK's
 # initialize(), which synchronously fetches the facilitator's /supported
