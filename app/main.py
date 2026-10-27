@@ -10,6 +10,7 @@ probes it WITHOUT paying it and works from what it publishes.
 
 from __future__ import annotations
 
+import hmac
 import logging
 import os
 from typing import Any
@@ -372,6 +373,21 @@ async def skill(request: Request):
 @app.get("/llms.txt", response_class=PlainTextResponse)
 async def llms(request: Request):
     return llms_txt(settings, _public_base(request))
+
+
+@app.post("/v1/internal/grade")
+async def grade_internal(req: GradeRequest, request: Request):
+    """Fleet-internal unpaid path for StallRow's /v1/orchestrate.
+    Secret discipline mirrors Token Verdict's RapidAPI route:
+    FLEET_INTERNAL_SECRET unset = 404, wrong secret = 403. Absent
+    from the x402 routes dict and every discovery surface."""
+    secret = settings.fleet_internal_secret
+    if not secret:
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    presented = request.headers.get("x-fleet-internal-secret", "")
+    if not hmac.compare_digest(presented, secret):
+        return JSONResponse({"error": "forbidden"}, status_code=403)
+    return await grade(req)
 
 
 @app.post("/v1/grade")
