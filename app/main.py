@@ -3,6 +3,9 @@
 Paid:   POST /v1/grade   (diagnosis only, USDC via x402 v2 on Base)
         POST /v1/fix     (the repaired discovery package)
 Free:   GET  /, /health, /quote, /.well-known/x402, /skill.md, /llms.txt
+        POST /v1/nudge (fleet-health nudge inbox — signed mail, not
+        a product) and POST /v1/internal/nudges (owner read, gated
+        by the fleet internal secret)
 
 Both paid routes are observation-only toward the target: ListSmith
 probes it WITHOUT paying it and works from what it publishes.
@@ -11,6 +14,7 @@ probes it WITHOUT paying it and works from what it publishes.
 from __future__ import annotations
 
 import hmac
+import json
 import logging
 import os
 from typing import Any
@@ -46,13 +50,20 @@ from .discovery import (
     skill_md,
     x402_manifest,
 )
+from . import nudge as nudge_svc
 from .fixer import run_fix
 from .grader import run_grade
+from .nudge import NudgeStore, resolve_nudge_path
+from .probe import USER_AGENT, _fetch_once, _shared_client
 
 log = logging.getLogger("list-smith")
 logging.basicConfig(level=logging.INFO)
 
 settings = load_settings()  # raises if payout wallet is a placeholder
+
+# Fleet-health nudge inbox store (app/nudge.py): signed inbound mail
+# in a small sqlite file beside the service.
+_nudge_store = NudgeStore(resolve_nudge_path())
 
 # --- x402 wiring -------------------------------------------------------------
 # The facilitator is chosen by X402_FACILITATOR_URL alone (plus CDP keys for
@@ -388,6 +399,126 @@ async def grade_internal(req: GradeRequest, request: Request):
     if not hmac.compare_digest(presented, secret):
         return JSONResponse({"error": "forbidden"}, status_code=403)
     return await grade(req)
+
+
+# --- Nudge inbox ------------------------------------------------------------------
+# The two-way leg of Fleet Check (app/nudge.py; spec:
+# x402-loop-kits/nudge-inbox.md). POST /v1/nudge is FREE — inbound
+# mail is not a product, and it is absent from the x402 `routes`
+# dict and every priced surface, so the priced route count does
+# not move. Every message is EIP-191-signed; unsigned or
+# wrongly-signed mail is a clean 4xx, never a 5xx. The owner reads
+# the inbox through the fleet-internal gate, same discipline as
+# /v1/internal/grade: secret unset = 404, wrong secret = 403.
+
+class NudgeInboxReadRequest(BaseModel):
+    limit: int = Field(default=50, ge=1, le=500)
+
+
+async def _stall_pay_to(stall: str) -> str | None:
+    """The payTo a stall's own discovery doc publishes — the
+    opt-out verifier's ground truth for who controls that stall.
+    Fetched under the probe's SSRF discipline (app/probe.py:
+    resolve + reject non-public, redirect re-checks, size cap)."""
+    try:
+        status, _headers, body = await _fetch_once(
+            _shared_client(),
+            "GET",
+            f"{stall.rstrip('/')}/.well-known/x402",
+            {"user-agent": USER_AGENT},
+            settings.fetch_timeout_s,
+        )
+    except Exception:  # noqa: BLE001 — an unreadable doc proves nothing
+        return None
+    if status != 200 or not body:
+        return None
+    try:
+        doc = json.loads(body)
+    except ValueError:
+        return None
+    pay_to = doc.get("payTo") if isinstance(doc, dict) else None
+    return pay_to if isinstance(pay_to, str) else None
+
+
+@app.post("/v1/nudge")
+async def nudge_inbox(request: Request):
+    """Receive one fleet-health nudge (or opt-out). The message is
+    validated structurally, then its signature must recover to the
+    claimed sender wallet, then — for nudges — the per-sender rate
+    limit applies. Verified nudges are stored deduped; opt-outs
+    must be signed by the payTo the named stall's own discovery
+    doc publishes, and are recorded for the sender engine."""
+    try:
+        raw = await request.body()
+        message = json.loads(raw) if raw else None
+    except ValueError:
+        return JSONResponse(
+            {"error": "body must be a JSON object"}, status_code=400
+        )
+    try:
+        nudge_svc.validate_message(message)
+        nudge_svc.verify_sender(message)
+    except nudge_svc.NudgeError as e:
+        return JSONResponse({"error": str(e)}, status_code=e.http_status)
+    if message["kind"] == nudge_svc.KIND_OPT_OUT:
+        pay_to = await _stall_pay_to(message["stall"])
+        if pay_to is None:
+            return JSONResponse(
+                {
+                    "error": "could not read the stall's discovery "
+                    "doc to verify payTo control"
+                },
+                status_code=422,
+            )
+        if pay_to.lower() != message["sender"].lower():
+            return JSONResponse(
+                {
+                    "error": "opt-out must be signed by the stall's "
+                    "published payTo wallet"
+                },
+                status_code=403,
+            )
+        _nudge_store.record_optout(message["stall"], message["sender"])
+        return {
+            "ok": True,
+            "kind": message["kind"],
+            "opted_out": message["stall"].rstrip("/"),
+        }
+    if not nudge_svc.RATE_LIMITER.allow(
+        message["sender"], nudge_svc.rate_limit_per_hour()
+    ):
+        return JSONResponse(
+            {"error": "rate limit: too many nudges from this sender"},
+            status_code=429,
+        )
+    stored = _nudge_store.store_nudge(message, nudge_svc.dedupe_key(message))
+    return {
+        "ok": True,
+        "kind": message["kind"],
+        "stored": stored,
+        "duplicate": not stored,
+    }
+
+
+@app.post("/v1/internal/nudges")
+async def nudge_inbox_read(
+    req: NudgeInboxReadRequest | None = None, request: Request = None
+):
+    """Owner read of the nudge inbox: stored nudges (newest first)
+    plus the opt-out registry. Fleet-internal secret gate, mirroring
+    /v1/internal/grade exactly."""
+    secret = settings.fleet_internal_secret
+    if not secret:
+        return JSONResponse({"detail": "Not Found"}, status_code=404)
+    presented = request.headers.get("x-fleet-internal-secret", "")
+    if not hmac.compare_digest(presented, secret):
+        return JSONResponse({"error": "forbidden"}, status_code=403)
+    limit = req.limit if req is not None else 50
+    return {
+        "count": _nudge_store.nudge_count(),
+        "nudges": _nudge_store.list_nudges(limit),
+        "optouts": _nudge_store.list_optouts(),
+    }
 
 
 @app.post("/v1/grade")

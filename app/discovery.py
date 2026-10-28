@@ -12,6 +12,7 @@ the 500-char CDP limit — all pinned by tests.
 from __future__ import annotations
 
 from .config import Settings
+from .nudge import nudge_extension
 
 # x402 v2 "exact"-scheme asset for USDC on Base mainnet (6 decimals) — the
 # real ERC-20 contract address, matching the asset the x402 SDK puts in
@@ -570,6 +571,11 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
         "network": settings.network,
         "payTo": settings.pay_to,
         "ownershipProofs": OWNERSHIP_PROOFS,
+        # The nudge inbox: this stall accepts signed fleet-health
+        # nudges (app/nudge.py; spec in x402-loop-kits). A top-level
+        # extension, NOT a resource — the priced route count (2)
+        # does not move.
+        "extensions": {"nudge": nudge_extension(base_url)},
         "resources": [
             {
                 "resource": f"{base_url}/v1/grade",

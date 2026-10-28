@@ -8,6 +8,9 @@ x402[fastapi,evm]==2.25.0
 # mints the facilitator JWTs with it). Harmless on the keyless/PayAI paths.
 cdp-sdk>=1.0
 httpx>=0.27,<0.29
+# Fleet-health nudge inbox (app/nudge.py): EIP-191 signature checks.
+# (x402[evm] already pulls it transitively; pinned explicitly.)
+eth-account>=0.13
 
 # dev / test
 pytest>=8.0
