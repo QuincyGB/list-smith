@@ -1,0 +1,51 @@
+{
+  "base_url": "https://list-smith-production.up.railway.app",
+  "change_policy": {
+    "statement": "Prices and output schemas recorded here change only under a new signed manifest version, published before or with the change taking effect; changes are also announced in the fleet's public change record as they land. A served route whose price or schema fingerprint disagrees with the latest signed manifest is a defect — report it to patrol@verdictrow.com."
+  },
+  "issued_at": "2026-10-30T20:57:55Z",
+  "manifest": "verdict-row-stability/v1",
+  "pay_to": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
+  "routes": [
+    {
+      "accepts": [
+        {
+          "amount": "100000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:8453",
+          "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
+          "scheme": "exact"
+        }
+      ],
+      "method": "POST",
+      "resource": "https://list-smith-production.up.railway.app/v1/grade",
+      "schema_fingerprint": "sha256:589e20a04f78c605eb5ad4d0383828e8811ab17afe0d29e7902c6a6dd9ba4667"
+    },
+    {
+      "accepts": [
+        {
+          "amount": "500000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:8453",
+          "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
+          "scheme": "exact"
+        }
+      ],
+      "method": "POST",
+      "resource": "https://list-smith-production.up.railway.app/v1/fix",
+      "schema_fingerprint": "sha256:a1910526e5c4da389a27ca13986f259aa412548d4c968c9aae9b3a35b6e6bef2"
+    },
+    {
+      "accepts": null,
+      "method": "GET",
+      "resource": "https://list-smith-production.up.railway.app/quote",
+      "schema_fingerprint": "sha256:06334c74179fe04003e14ffd129c8518b8c3380bfea5e3d1308f4f4888c8f6e2"
+    }
+  ],
+  "signature": "0x60444cd5ac2513ed3dde412d63755ef6db54e90c266cf282360b003c0abf510f4a309dcdf7f37242ff55edb82232ee0235236c46c25a129c27890a509f849fa41c",
+  "signer": "0xa4f183a6799F0310FcCC545B07F2DcC960223de2",
+  "stall": "list-smith",
+  "version": "2026-10-30.1"
+}

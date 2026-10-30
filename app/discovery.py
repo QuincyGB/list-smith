@@ -757,6 +757,7 @@ validation gate, either mode.
 - `GET {base_url}/health` — liveness
 - `GET {base_url}/.well-known/x402` — machine-readable manifest
 - `GET {base_url}/.well-known/agent-card.json` — A2A agent card (skills mirror the priced routes)
+- `GET {base_url}/.well-known/stability-manifest.json` — signed pinned-route stability manifest (prices + schema fingerprints, pinned under an agent-wallet signature)
 
 ## Honest limits
 
@@ -782,4 +783,5 @@ Paid API: listing grades & repairs for x402 services (Bazaar discovery metadata)
 - GET {base_url}/health — free liveness check
 - GET {base_url}/.well-known/x402 — manifest
 - GET {base_url}/.well-known/agent-card.json — A2A agent card (skills mirror the priced routes)
+- GET {base_url}/.well-known/stability-manifest.json — signed pinned-route stability manifest (prices + schema fingerprints)
 """
