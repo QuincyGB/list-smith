@@ -1,0 +1,256 @@
+{
+  "defects": [
+    {
+      "detail": "info.output carries only type/example \u2014 the hollow shape 87.8% of listings ship. No field is typed, so a buyer cannot validate a response.",
+      "name": "hollow output schema (example only, no typed schema)",
+      "severity": "major"
+    }
+  ],
+  "failure": null,
+  "graded_at": "2026-10-25T05:23:52.401134+00:00",
+  "live": false,
+  "mode": "full",
+  "notes": [
+    "inferred_from: single_sample \u2014 the output schema was inferred from the one sample supplied; review it before shipping, especially arrays (element schemas are merged) and any field whose real type varies."
+  ],
+  "ok": true,
+  "package": {
+    "description": "Target Thing \u2014 returns verdict, score. Use when you need structured data inside an agent workflow. $0.02 per call in USDC on Base via x402.",
+    "extension": {
+      "info": {
+        "input": {
+          "body": {
+            "thing_id": "abc"
+          },
+          "bodyType": "json",
+          "method": "POST",
+          "type": "http"
+        },
+        "output": {
+          "example": {
+            "score": 12,
+            "verdict": "OK"
+          },
+          "schema": {
+            "properties": {
+              "score": {
+                "type": "integer"
+              },
+              "verdict": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "verdict",
+              "score"
+            ],
+            "type": "object"
+          },
+          "type": "json"
+        }
+      },
+      "schema": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "properties": {
+          "input": {
+            "additionalProperties": false,
+            "properties": {
+              "body": {
+                "properties": {
+                  "thing_id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "thing_id"
+                ],
+                "type": "object"
+              },
+              "bodyType": {
+                "enum": [
+                  "json",
+                  "form-data",
+                  "text"
+                ],
+                "type": "string"
+              },
+              "method": {
+                "enum": [
+                  "POST",
+                  "PUT",
+                  "PATCH"
+                ],
+                "type": "string"
+              },
+              "type": {
+                "const": "http",
+                "type": "string"
+              }
+            },
+            "required": [
+              "type",
+              "method",
+              "bodyType",
+              "body"
+            ],
+            "type": "object"
+          },
+          "output": {
+            "properties": {
+              "example": {
+                "properties": {
+                  "score": {
+                    "type": "integer"
+                  },
+                  "verdict": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "verdict",
+                  "score"
+                ],
+                "type": "object"
+              },
+              "schema": {
+                "type": "object"
+              },
+              "type": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "type"
+            ],
+            "type": "object"
+          }
+        },
+        "required": [
+          "input"
+        ],
+        "type": "object"
+      }
+    },
+    "inferred_from": "single_sample",
+    "instructions": "How to ship this package (standard x402 middleware, e.g. the Python/TS x402 SDKs):\n\n1. Set your route's description to package.description (it is under 500 characters,\n   so CDP-facilitator payments will not be rejected for length), e.g.:\n       RouteConfig(description=<package.description>, extensions={\"bazaar\": <package.extension>})\n2. Attach package.extension as the route's Bazaar discovery extension:\n       extensions={\"bazaar\": package[\"extension\"]} on the same route config.\n   The extension passed validate_discovery_extension and\n   validate_discovery_extension_spec at generation time.\n3. Replace the resource entry in your /.well-known/x402 manifest with\n   package.well_known_snippet, and merge package.openapi_snippet.paths into\n   your OpenAPI document.\n4. Keep the manifest accepts IDENTICAL to your live 402 challenge \u2014 directory\n   validators read the two against each other and reject mismatches.\n5. Metadata alone never lists you: settle one real payment through the CDP\n   facilitator (CDP Bazaar / Agentic.Market) or the PayAI facilitator (PayAI\n   index) and that index catalogs this route; re-settle at least every ~30 days\n   or the listing ages out.",
+    "openapi_snippet": {
+      "openapi": "3.0.3",
+      "paths": {
+        "/v1/thing": {
+          "post": {
+            "description": "Target Thing \u2014 returns verdict, score. Use when you need structured data inside an agent workflow. $0.02 per call in USDC on Base via x402.",
+            "requestBody": {
+              "content": {
+                "application/json": {
+                  "example": {
+                    "thing_id": "abc"
+                  },
+                  "schema": {
+                    "properties": {
+                      "thing_id": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "thing_id"
+                    ],
+                    "type": "object"
+                  }
+                }
+              },
+              "required": true
+            },
+            "responses": {
+              "200": {
+                "content": {
+                  "application/json": {
+                    "example": {
+                      "score": 12,
+                      "verdict": "OK"
+                    },
+                    "schema": {
+                      "properties": {
+                        "score": {
+                          "type": "integer"
+                        },
+                        "verdict": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "verdict",
+                        "score"
+                      ],
+                      "type": "object"
+                    }
+                  }
+                },
+                "description": "Success"
+              },
+              "402": {
+                "description": "Payment required \u2014 x402 challenge; extensions.bazaar carries the discovery extension from this package."
+              }
+            },
+            "summary": "Target Thing \u2014 returns verdict, score"
+          }
+        }
+      }
+    },
+    "validation": {
+      "consistency_valid": true,
+      "spec_valid": true
+    },
+    "well_known_snippet": {
+      "accepts": [
+        {
+          "amount": "20000",
+          "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          "maxTimeoutSeconds": 300,
+          "network": "eip155:8453",
+          "payTo": "0x1111111111111111111111111111111111111111",
+          "scheme": "exact"
+        }
+      ],
+      "description": "Target Thing \u2014 returns verdict, score. Use when you need structured data inside an agent workflow. $0.02 per call in USDC on Base via x402.",
+      "inputSchema": {
+        "properties": {
+          "thing_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "thing_id"
+        ],
+        "type": "object"
+      },
+      "method": "POST",
+      "mimeType": "application/json",
+      "outputSchema": {
+        "properties": {
+          "score": {
+            "type": "integer"
+          },
+          "verdict": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "verdict",
+          "score"
+        ],
+        "type": "object"
+      },
+      "price": "$0.02",
+      "resource": "https://token-verdict-production.up.railway.app/v1/verdict",
+      "scheme": "exact"
+    }
+  },
+  "recorded_at": null,
+  "resource_url": "https://token-verdict-production.up.railway.app/v1/verdict",
+  "route": "/v1/fix",
+  "sample": true,
+  "sample_note": "Shape example built from this route's documented output example (validated against its outputSchema) with real fleet subjects \u2014 not a recorded result. Buy the route for live data.",
+  "score_before": 88,
+  "source": "schema-example",
+  "target": "https://token-verdict-production.up.railway.app/v1/verdict"
+}

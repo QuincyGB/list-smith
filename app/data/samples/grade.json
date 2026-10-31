@@ -1,0 +1,52 @@
+{
+  "defects": [
+    {
+      "detail": "info.output carries only type/example \u2014 the hollow shape 87.8% of listings ship. No field is typed, so a buyer cannot validate a response.",
+      "name": "hollow output schema (example only, no typed schema)",
+      "severity": "major"
+    }
+  ],
+  "extension_present": true,
+  "fix_available": true,
+  "graded_at": "2026-10-21T21:38:16.618483+00:00",
+  "http_status": 402,
+  "live": false,
+  "reachable": true,
+  "recorded_at": null,
+  "resource_url": "https://token-verdict-production.up.railway.app/v1/verdict",
+  "route": "/v1/grade",
+  "sample": true,
+  "sample_note": "Shape example built from this route's documented output example (validated against its outputSchema) with real fleet subjects \u2014 not a recorded result. Buy the route for live data.",
+  "schema_quality": {
+    "deductions": [
+      {
+        "detail": "info.output carries only type/example \u2014 the hollow shape 87.8% of listings ship. No field is typed, so a buyer cannot validate a response.",
+        "name": "hollow output (example only, no schema)",
+        "points": 45
+      }
+    ],
+    "extension_present": true,
+    "hollow": true,
+    "score": 55
+  },
+  "score": 88,
+  "sdk_validation": {
+    "consistency_valid": true,
+    "errors": [],
+    "ran": true,
+    "spec_valid": true
+  },
+  "source": "schema-example",
+  "target": "https://token-verdict-production.up.railway.app/v1/verdict",
+  "terms": {
+    "amount_units": "20000",
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "found": true,
+    "network": "eip155:8453",
+    "pay_to": "0x1111111111111111111111111111111111111111",
+    "price_usdc": "$0.02",
+    "scheme": "exact",
+    "x402_version": 2
+  },
+  "x402_valid": true
+}
