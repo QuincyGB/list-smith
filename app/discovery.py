@@ -804,6 +804,7 @@ validation gate, either mode.
 - MCP server (stdio, run it in your own MCP host): https://github.com/QuincyGB/list-smith-mcp — manifest (server.json): https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json — tools wrap the priced routes (/v1/grade, /v1/fix)
 - Inspector Quickstart Pack (curl / Python / TypeScript): https://stall-row-production.up.railway.app/quickstart/curl · https://stall-row-production.up.railway.app/quickstart/python · https://stall-row-production.up.railway.app/quickstart/typescript — one-page integration path: pin Recheck + RouteVerdict, read the feed, register a watch, fund a pack
 - Verdict Row Tools Index: https://stall-row-production.up.railway.app/tools — every stall, every priced route + price, key surfaces (agent card, stability manifest, gradeability report, MCP, SDK status); machine-readable: https://stall-row-production.up.railway.app/tools.json
+- Verdict Row Public Changelog: https://stall-row-production.up.railway.app/changelog.atom — subscribable Atom feed of fleet route / price / stability-manifest changes (JSON twin: https://stall-row-production.up.railway.app/changelog.json)
 
 ## Honest limits
 
@@ -834,4 +835,5 @@ Paid API: listing grades & repairs for x402 services (Bazaar discovery metadata)
 - MCP server (stdio, run it in your own MCP host): https://github.com/QuincyGB/list-smith-mcp — manifest (server.json): https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json — tools wrap the priced routes (/v1/grade, /v1/fix)
 - Inspector Quickstart Pack (curl / Python / TypeScript): https://stall-row-production.up.railway.app/quickstart/curl · https://stall-row-production.up.railway.app/quickstart/python · https://stall-row-production.up.railway.app/quickstart/typescript — one-page integration path: pin Recheck + RouteVerdict, read the feed, register a watch, fund a pack
 - Verdict Row Tools Index: https://stall-row-production.up.railway.app/tools — every stall, every priced route + price, key surfaces (agent card, stability manifest, gradeability report, MCP, SDK status); machine-readable: https://stall-row-production.up.railway.app/tools.json
+- Verdict Row Public Changelog: https://stall-row-production.up.railway.app/changelog.atom — subscribable Atom feed of fleet route / price / stability-manifest changes (JSON twin: https://stall-row-production.up.railway.app/changelog.json)
 """
