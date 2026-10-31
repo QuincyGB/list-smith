@@ -575,7 +575,7 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
         # nudges (app/nudge.py; spec in x402-loop-kits). A top-level
         # extension, NOT a resource — the priced route count (2)
         # does not move.
-        "extensions": {"nudge": nudge_extension(base_url), "mcp": dict(MCP_SERVER)},
+        "extensions": {"nudge": nudge_extension(base_url), "mcp": dict(MCP_SERVER), "quickstart": dict(QUICKSTART)},
         "resources": [
             {
                 "resource": f"{base_url}/v1/grade",
@@ -653,6 +653,18 @@ MCP_SERVER = {
     "manifest": "https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json",
 }
 
+# The Inspector Quickstart Pack: one page per language (curl /
+# Python / TypeScript), hosted canonically on StallRow at
+# /quickstart/<lang>. Every stall links the same canonical pages;
+# the URLs are absolute because the pack lives on StallRow's origin
+# no matter which stall's discovery doc a reader started from.
+QUICKSTART = {
+    "title": "Inspector Quickstart Pack",
+    "curl": "https://stall-row-production.up.railway.app/quickstart/curl",
+    "python": "https://stall-row-production.up.railway.app/quickstart/python",
+    "typescript": "https://stall-row-production.up.railway.app/quickstart/typescript",
+}
+
 
 def _skill_name(path: str) -> str:
     return path.rstrip("/").rsplit("/", 1)[-1].replace("-", " ").title()
@@ -712,6 +724,7 @@ def agent_card(settings: Settings, base_url: str) -> dict:
             "asset": USDC_ASSET,
         },
         "mcp": dict(MCP_SERVER),
+        "quickstart": dict(QUICKSTART),
     }
 
 
@@ -771,6 +784,7 @@ validation gate, either mode.
 - `GET {base_url}/.well-known/agent-card.json` — A2A agent card (skills mirror the priced routes)
 - `GET {base_url}/.well-known/stability-manifest.json` — signed pinned-route stability manifest (prices + schema fingerprints, pinned under an agent-wallet signature)
 - MCP server (stdio, run it in your own MCP host): https://github.com/QuincyGB/list-smith-mcp — manifest (server.json): https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json — tools wrap the priced routes (/v1/grade, /v1/fix)
+- Inspector Quickstart Pack (curl / Python / TypeScript): https://stall-row-production.up.railway.app/quickstart/curl · https://stall-row-production.up.railway.app/quickstart/python · https://stall-row-production.up.railway.app/quickstart/typescript — one-page integration path: pin Recheck + RouteVerdict, read the feed, register a watch, fund a pack
 
 ## Honest limits
 
@@ -798,4 +812,5 @@ Paid API: listing grades & repairs for x402 services (Bazaar discovery metadata)
 - GET {base_url}/.well-known/agent-card.json — A2A agent card (skills mirror the priced routes)
 - GET {base_url}/.well-known/stability-manifest.json — signed pinned-route stability manifest (prices + schema fingerprints)
 - MCP server (stdio, run it in your own MCP host): https://github.com/QuincyGB/list-smith-mcp — manifest (server.json): https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json — tools wrap the priced routes (/v1/grade, /v1/fix)
+- Inspector Quickstart Pack (curl / Python / TypeScript): https://stall-row-production.up.railway.app/quickstart/curl · https://stall-row-production.up.railway.app/quickstart/python · https://stall-row-production.up.railway.app/quickstart/typescript — one-page integration path: pin Recheck + RouteVerdict, read the feed, register a watch, fund a pack
 """
