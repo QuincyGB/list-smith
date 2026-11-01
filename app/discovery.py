@@ -590,7 +590,7 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
                     "only — no repaired content. Use this when you want "
                     "to know what is broken before paying for the fix."
                 ),
-                "tags": ["x402", "bazaar", "grading", "validation", "discovery", "agents"],
+                "tags": ["x402", "bazaar", "grading", "validation", "discovery", "agents", "manifest", "preflight", "listing-grade"],
                 "accepts": accepts(settings.grade_price_usdc),
                 "inputSchema": GRADE_INPUT_SCHEMA,
                 "outputSchema": GRADE_OUTPUT_SCHEMA,
@@ -612,7 +612,7 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
                     "it passes both x402 SDK validators. Use this when "
                     "your listing is hollow, invalid, or invisible."
                 ),
-                "tags": ["x402", "bazaar", "repair", "schema", "discovery", "agents"],
+                "tags": ["x402", "bazaar", "repair", "schema", "discovery", "agents", "manifest", "listing-repair", "schema-fix"],
                 "accepts": accepts(settings.fix_price_usdc),
                 "inputSchema": FIX_INPUT_SCHEMA,
                 "outputSchema": FIX_OUTPUT_SCHEMA,
