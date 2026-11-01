@@ -58,6 +58,7 @@ from .openapi_examples import add_worked_examples
 from . import nudge as nudge_svc
 from .fixer import run_fix
 from .grader import run_grade
+from .loop_offer import attach_loop_offer
 from .nudge import NudgeStore, resolve_nudge_path
 from .probe import USER_AGENT, _fetch_once, _shared_client
 
@@ -677,10 +678,12 @@ async def grade(req: GradeRequest):
     resource_url = req.resource_url.strip()
     try:
         if req.sample_output is None:
-            return await run_grade(resource_url, timeout=settings.fetch_timeout_s)
-        return await run_grade(
-            resource_url, timeout=settings.fetch_timeout_s, sample_output=req.sample_output
-        )
+            result = await run_grade(resource_url, timeout=settings.fetch_timeout_s)
+        else:
+            result = await run_grade(
+                resource_url, timeout=settings.fetch_timeout_s, sample_output=req.sample_output
+            )
+        return attach_loop_offer(result)
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=422)
     except Exception:  # noqa: BLE001 — never leak tracebacks to callers
@@ -693,7 +696,7 @@ async def fix(req: FixRequest):
     """Paid endpoint — unreachable until the x402 middleware verifies payment."""
     resource_url = req.resource_url.strip()
     try:
-        return await run_fix(
+        result = await run_fix(
             resource_url,
             req.sample_output,
             name=req.name,
@@ -701,6 +704,7 @@ async def fix(req: FixRequest):
             mode=req.mode,
             timeout=settings.fetch_timeout_s,
         )
+        return attach_loop_offer(result)
     except ValueError as e:
         return JSONResponse({"error": str(e)}, status_code=422)
     except Exception:  # noqa: BLE001 — never leak tracebacks to callers
