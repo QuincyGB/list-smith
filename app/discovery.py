@@ -575,7 +575,7 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
         # nudges (app/nudge.py; spec in x402-loop-kits). A top-level
         # extension, NOT a resource — the priced route count (2)
         # does not move.
-        "extensions": {"nudge": nudge_extension(base_url), "mcp": dict(MCP_SERVER), "quickstart": dict(QUICKSTART), "gradeability": gradeability_extension(base_url)},
+        "extensions": {"nudge": nudge_extension(base_url), "mcp": dict(MCP_SERVER), "quickstart": dict(QUICKSTART), "gradeability": gradeability_extension(base_url), "verdict_row": verdict_row_extension(base_url)},
         "resources": [
             {
                 "resource": f"{base_url}/v1/grade",
@@ -681,6 +681,28 @@ def gradeability_extension(base_url: str) -> dict:
     }
 
 
+# The Fleet Discovery Bundle + the registry-generated A2A dialect card:
+# committed at app/data/verdict-row.json and app/data/a2a-agent-card.json
+# (generated + bundle signed VM-side by the fleet's discovery_bundle.py
+# FROM route_registry.json), served verbatim at
+# /.well-known/verdict-row.json and /.well-known/a2a-agent-card.json;
+# linked from the manifest extensions, the agent card, skill.md and
+# llms.txt. The bundle is ONE signed index of all five stalls — one
+# fetch walks the entire row. The A2A card sits ALONGSIDE the existing
+# /.well-known/agent-card.json (already A2A-shaped; its path/shape are
+# unchanged) for readers that look for an explicitly-named A2A card.
+VERDICT_ROW_BUNDLE_PATH = "/.well-known/verdict-row.json"
+A2A_AGENT_CARD_PATH = "/.well-known/a2a-agent-card.json"
+
+
+def verdict_row_extension(base_url: str) -> dict:
+    return {
+        "title": "Verdict Row Fleet Discovery Bundle + A2A agent card",
+        "bundle": f"{base_url}{VERDICT_ROW_BUNDLE_PATH}",
+        "a2a_agent_card": f"{base_url}{A2A_AGENT_CARD_PATH}",
+    }
+
+
 
 def _skill_name(path: str) -> str:
     return path.rstrip("/").rsplit("/", 1)[-1].replace("-", " ").title()
@@ -742,6 +764,8 @@ def agent_card(settings: Settings, base_url: str) -> dict:
         "mcp": dict(MCP_SERVER),
         "quickstart": dict(QUICKSTART),
         "gradeability": gradeability_extension(base_url),
+
+        "verdict_row": verdict_row_extension(base_url),
     }
 
 
@@ -801,6 +825,8 @@ validation gate, either mode.
 - `GET {base_url}/.well-known/agent-card.json` — A2A agent card (skills mirror the priced routes)
 - `GET {base_url}/.well-known/stability-manifest.json` — signed pinned-route stability manifest (prices + schema fingerprints, pinned under an agent-wallet signature)
 - `GET {base_url}/.well-known/gradeability-report.json` — Gradeability Self-Test Report (latest self-test: listed price vs live 402 per priced route, challenge parse, spec checks, standing-checker result; signed, free)
+- `GET {base_url}/.well-known/verdict-row.json` — Verdict Row Fleet Discovery Bundle (signed index of all five stalls: discovery docs, stability manifests, agent cards, gradeability reports, MCP server.json, fleet tools/status and feeds; one fetch walks the whole row, free)
+- `GET {base_url}/.well-known/a2a-agent-card.json` — A2A agent card (registry-generated dialect twin of /.well-known/agent-card.json: skills mirror the priced routes at their registry prices, free)
 - MCP server (stdio, run it in your own MCP host): https://github.com/QuincyGB/list-smith-mcp — manifest (server.json): https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json — tools wrap the priced routes (/v1/grade, /v1/fix)
 - Inspector Quickstart Pack (curl / Python / TypeScript): https://stall-row-production.up.railway.app/quickstart/curl · https://stall-row-production.up.railway.app/quickstart/python · https://stall-row-production.up.railway.app/quickstart/typescript — one-page integration path: pin Recheck + RouteVerdict, read the feed, register a watch, fund a pack
 - Verdict Row Tools Index: https://stall-row-production.up.railway.app/tools — every stall, every priced route + price, key surfaces (agent card, stability manifest, gradeability report, MCP, SDK status); machine-readable: https://stall-row-production.up.railway.app/tools.json
@@ -834,6 +860,8 @@ Paid API: listing grades & repairs for x402 services (Bazaar discovery metadata)
 - GET {base_url}/.well-known/agent-card.json — A2A agent card (skills mirror the priced routes)
 - GET {base_url}/.well-known/stability-manifest.json — signed pinned-route stability manifest (prices + schema fingerprints)
 - GET {base_url}/.well-known/gradeability-report.json — Gradeability Self-Test Report (latest self-test: listed vs live 402 per priced route; signed, free)
+- GET {base_url}/.well-known/verdict-row.json — Verdict Row Fleet Discovery Bundle (signed index of all five stalls: discovery docs, stability manifests, agent cards, gradeability reports, MCP server.json, fleet tools/status and feeds; one fetch walks the whole row, free)
+- GET {base_url}/.well-known/a2a-agent-card.json — A2A agent card (registry-generated dialect twin of /.well-known/agent-card.json: skills mirror the priced routes at their registry prices, free)
 - MCP server (stdio, run it in your own MCP host): https://github.com/QuincyGB/list-smith-mcp — manifest (server.json): https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json — tools wrap the priced routes (/v1/grade, /v1/fix)
 - Inspector Quickstart Pack (curl / Python / TypeScript): https://stall-row-production.up.railway.app/quickstart/curl · https://stall-row-production.up.railway.app/quickstart/python · https://stall-row-production.up.railway.app/quickstart/typescript — one-page integration path: pin Recheck + RouteVerdict, read the feed, register a watch, fund a pack
 - Verdict Row Tools Index: https://stall-row-production.up.railway.app/tools — every stall, every priced route + price, key surfaces (agent card, stability manifest, gradeability report, MCP, SDK status); machine-readable: https://stall-row-production.up.railway.app/tools.json

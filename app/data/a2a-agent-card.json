@@ -1,0 +1,110 @@
+{
+  "capabilities": {
+    "pushNotifications": false,
+    "stateTransitionHistory": false,
+    "streaming": false
+  },
+  "contactEmail": "patrol@verdictrow.com",
+  "defaultInputModes": [
+    "application/json"
+  ],
+  "defaultOutputModes": [
+    "application/json"
+  ],
+  "description": "Listing grades and repairs for x402 services. /v1/grade ($0.10) itemizes what is broken in a route's Bazaar discovery metadata — hollow schemas, failed SDK validation, over-500-char descriptions, wrong asset addresses. /v1/fix ($0.50) returns a repaired, validator-passed discovery package inferred from one real sample output. Use this when you operate an x402 route and need it discoverable, valid, and honestly described.",
+  "discovery_bundle": "https://list-smith-production.up.railway.app/.well-known/verdict-row.json",
+  "documentationUrl": "https://list-smith-production.up.railway.app/llms.txt",
+  "name": "ListSmith",
+  "protocolVersion": "0.3.0",
+  "provider": {
+    "email": "patrol@verdictrow.com",
+    "organization": "Verdict Row",
+    "url": "https://github.com/QuincyGB"
+  },
+  "services": [
+    {
+      "amount": "100000",
+      "endpoint": "https://list-smith-production.up.railway.app/v1/grade",
+      "name": "/v1/grade"
+    },
+    {
+      "amount": "500000",
+      "endpoint": "https://list-smith-production.up.railway.app/v1/fix",
+      "name": "/v1/fix"
+    }
+  ],
+  "skills": [
+    {
+      "description": "Grade one x402 route's discovery metadata: SDK validation verdicts, schema-quality score, itemized defects with severities, and a 0-100 grade. Diagnosis only — no repaired content. Use this when you want to know what is broken before paying for the fix.",
+      "id": "v1-grade",
+      "inputModes": [
+        "application/json"
+      ],
+      "method": "POST",
+      "name": "Grade",
+      "outputModes": [
+        "application/json"
+      ],
+      "price": {
+        "amount_units": "100000",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "display": "$0.10",
+        "network": "eip155:8453",
+        "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
+        "protocol": "x402",
+        "scheme": "exact",
+        "usd": "0.1"
+      },
+      "tags": [
+        "x402",
+        "bazaar",
+        "grading",
+        "validation",
+        "discovery",
+        "agents"
+      ],
+      "url": "https://list-smith-production.up.railway.app/v1/grade"
+    },
+    {
+      "description": "Repair one x402 route's discovery metadata: a Bazaar extension with a full output schema inferred from your sample, a sub-500-char description with a use-when sentence, OpenAPI and well-known snippets, and paste-in instructions. Send mode 'compact' for the repaired fields only (description, extension info, changes) in a smaller response. Ships only if it passes both x402 SDK validators. Use this when your listing is hollow, invalid, or invisible.",
+      "id": "v1-fix",
+      "inputModes": [
+        "application/json"
+      ],
+      "method": "POST",
+      "name": "Fix",
+      "outputModes": [
+        "application/json"
+      ],
+      "price": {
+        "amount_units": "500000",
+        "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+        "display": "$0.50",
+        "network": "eip155:8453",
+        "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
+        "protocol": "x402",
+        "scheme": "exact",
+        "usd": "0.5"
+      },
+      "tags": [
+        "x402",
+        "bazaar",
+        "repair",
+        "schema",
+        "discovery",
+        "agents"
+      ],
+      "url": "https://list-smith-production.up.railway.app/v1/fix"
+    }
+  ],
+  "url": "https://list-smith-production.up.railway.app",
+  "version": "1.0.0",
+  "x402": {
+    "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "discovery": "https://list-smith-production.up.railway.app/.well-known/x402",
+    "network": "eip155:8453",
+    "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
+    "scheme": "exact",
+    "version": 2
+  }
+}
