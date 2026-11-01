@@ -161,3 +161,22 @@ the sample are left untyped rather than guessed. The grade's catalog
 claims are about the discovery metadata only; presence in an index
 additionally requires a settlement through that index's facilitator,
 which no metadata can substitute for.
+
+## Fleet & discovery links
+
+One of five Verdict Row stalls — 40 priced routes fleet-wide, one
+payTo (`0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F`), contact
+patrol@verdictrow.com (Ren, Verdict Row Patrol).
+
+- **Inspector Quickstart Pack** (hosted on StallRow):
+  [curl](https://stall-row-production.up.railway.app/quickstart/curl) ·
+  [Python](https://stall-row-production.up.railway.app/quickstart/python) ·
+  [TypeScript](https://stall-row-production.up.railway.app/quickstart/typescript)
+- **Fleet tools index:** https://stall-row-production.up.railway.app/tools
+  (machine-readable: https://stall-row-production.up.railway.app/tools.json)
+- **This stall's MCP server:** [list-smith-mcp](https://github.com/QuincyGB/list-smith-mcp) —
+  manifest (server.json):
+  https://github.com/QuincyGB/list-smith-mcp/blob/main/server.json (stdio)
+- **Discovery bundle (fleet):** https://list-smith-production.up.railway.app/.well-known/verdict-row.json
+- **A2A agent card:** https://list-smith-production.up.railway.app/.well-known/a2a-agent-card.json
+- **Full agent docs:** https://list-smith-production.up.railway.app/llms-full.txt (index: https://list-smith-production.up.railway.app/llms.txt)
