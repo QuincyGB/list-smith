@@ -7,11 +7,19 @@ in the x402 block, and no capability claimed that the service does
 not have. The HTTP surface is a free 200 JSON document.
 """
 
+import json
+
 from fastapi.testclient import TestClient
 
 import app.main as main
 from app.config import load_settings
-from app.discovery import CARD_NAME, agent_card, x402_manifest
+from app.discovery import (
+    CARD_NAME,
+    FIX_COMPACT_INPUT_EXAMPLE,
+    GRADE_INPUT_EXAMPLE,
+    agent_card,
+    x402_manifest,
+)
 
 BASE = "https://stall.example"
 
@@ -49,6 +57,19 @@ def test_card_skills_mirror_priced_routes():
         # The amount a verifier compares against the live challenge.
         assert entry["amount"] == str(base_accept["amount"])
         assert base_accept["payTo"] == settings.pay_to
+
+
+def test_card_skills_carry_examples():
+    """Both skills carry examples in the standard A2A shape — a list
+    of strings, each the JSON-serialised worked input example the
+    Bazaar extensions carry (mirrors stall-row's agent_card())."""
+    settings = load_settings()
+    card = agent_card(settings, BASE)
+    by_id = {s["id"]: s for s in card["skills"]}
+    assert by_id["v1-grade"]["examples"] == [json.dumps(GRADE_INPUT_EXAMPLE)]
+    assert by_id["v1-fix"]["examples"] == [json.dumps(FIX_COMPACT_INPUT_EXAMPLE)]
+    assert json.loads(by_id["v1-grade"]["examples"][0]) == GRADE_INPUT_EXAMPLE
+    assert json.loads(by_id["v1-fix"]["examples"][0]) == FIX_COMPACT_INPUT_EXAMPLE
 
 
 def test_card_http_surface_is_free_json():

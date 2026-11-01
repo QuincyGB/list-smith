@@ -11,6 +11,8 @@ the 500-char CDP limit — all pinned by tests.
 
 from __future__ import annotations
 
+import json
+
 from .config import Settings
 from .nudge import nudge_extension
 
@@ -592,8 +594,8 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
                 ),
                 "tags": ["x402", "bazaar", "grading", "validation", "discovery", "agents", "manifest", "preflight", "listing-grade"],
                 "accepts": accepts(settings.grade_price_usdc),
-                "inputSchema": GRADE_INPUT_SCHEMA,
-                "outputSchema": GRADE_OUTPUT_SCHEMA,
+                "inputSchema": {**GRADE_INPUT_SCHEMA, "example": GRADE_INPUT_EXAMPLE},
+                "outputSchema": {**GRADE_OUTPUT_SCHEMA, "example": GRADE_OUTPUT_EXAMPLE},
             },
             {
                 "resource": f"{base_url}/v1/fix",
@@ -614,8 +616,8 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
                 ),
                 "tags": ["x402", "bazaar", "repair", "schema", "discovery", "agents", "manifest", "listing-repair", "schema-fix"],
                 "accepts": accepts(settings.fix_price_usdc),
-                "inputSchema": FIX_INPUT_SCHEMA,
-                "outputSchema": FIX_OUTPUT_SCHEMA,
+                "inputSchema": {**FIX_INPUT_SCHEMA, "example": FIX_COMPACT_INPUT_EXAMPLE},
+                "outputSchema": {**FIX_OUTPUT_SCHEMA, "example": FIX_COMPACT_OUTPUT_EXAMPLE},
             },
             {
                 "resource": f"{base_url}/quote",
@@ -711,6 +713,15 @@ def _skill_name(path: str) -> str:
 
 def agent_card(settings: Settings, base_url: str) -> dict:
     manifest = x402_manifest(settings, base_url)
+    # Skill examples: the same worked input examples the Bazaar
+    # extensions carry (grade -> GRADE_INPUT_EXAMPLE, fix -> the
+    # compact pair fix_extension() publishes), in the standard A2A
+    # shape — a list of strings, each a JSON-serialised example
+    # (mirrors stall-row's agent_card()).
+    _input_examples = {
+        "/v1/grade": GRADE_INPUT_EXAMPLE,
+        "/v1/fix": FIX_COMPACT_INPUT_EXAMPLE,
+    }
     skills: list[dict] = []
     services: list[dict] = []
     for r in manifest["resources"]:
@@ -728,6 +739,11 @@ def agent_card(settings: Settings, base_url: str) -> dict:
                 "name": _skill_name(path),
                 "description": r["description"],
                 "tags": r.get("tags") or [],
+                "examples": (
+                    [json.dumps(_input_examples[path])]
+                    if path in _input_examples and _input_examples[path]
+                    else []
+                ),
                 "inputModes": ["application/json"],
                 "outputModes": ["application/json"],
             }

@@ -24,6 +24,7 @@ from app.discovery import (
     FIX_INPUT_SCHEMA,
     FIX_OUTPUT_EXAMPLE,
     FIX_OUTPUT_SCHEMA,
+    GRADE_INPUT_EXAMPLE,
     GRADE_INPUT_SCHEMA,
     GRADE_OUTPUT_EXAMPLE,
     GRADE_OUTPUT_SCHEMA,
@@ -235,11 +236,13 @@ def test_manifest_lists_both_routes_with_exact_prices(client):
     assert grade_res["price"] == "$0.10"
     assert grade_res["accepts"][0]["amount"] == "100000"
     assert grade_res["accepts"][0]["payTo"] == OWNER
-    assert grade_res["outputSchema"] == GRADE_OUTPUT_SCHEMA
+    assert grade_res["outputSchema"] == {**GRADE_OUTPUT_SCHEMA, "example": GRADE_OUTPUT_EXAMPLE}
+    assert grade_res["inputSchema"] == {**GRADE_INPUT_SCHEMA, "example": GRADE_INPUT_EXAMPLE}
     assert fix_res["price"] == "$0.50"
     assert fix_res["accepts"][0]["amount"] == "500000"
     assert fix_res["accepts"][0]["payTo"] == OWNER
-    assert fix_res["outputSchema"] == FIX_OUTPUT_SCHEMA
+    assert fix_res["outputSchema"] == {**FIX_OUTPUT_SCHEMA, "example": FIX_COMPACT_OUTPUT_EXAMPLE}
+    assert fix_res["inputSchema"] == {**FIX_INPUT_SCHEMA, "example": FIX_COMPACT_INPUT_EXAMPLE}
     assert len(body["description"]) < 500
     assert client.get("/llms.txt").status_code == 200
     assert client.get("/skill.md").status_code == 200
@@ -247,3 +250,23 @@ def test_manifest_lists_both_routes_with_exact_prices(client):
     assert openapi.status_code == 200
     paths = openapi.json()["paths"]
     assert "/v1/grade" in paths and "/v1/fix" in paths
+
+
+def test_manifest_resources_carry_input_and_output_examples():
+    """Both priced resources embed the worked examples (the same
+    values the Bazaar extensions carry) inside their schemas under
+    the JSON-Schema-standard "example" key."""
+    settings = load_settings()
+    manifest = x402_manifest(settings, "https://example.test")
+    grade_res, fix_res = manifest["resources"][0], manifest["resources"][1]
+    assert grade_res["resource"].endswith("/v1/grade")
+    assert grade_res["inputSchema"]["example"] == GRADE_INPUT_EXAMPLE
+    assert grade_res["outputSchema"]["example"] == GRADE_OUTPUT_EXAMPLE
+    assert fix_res["resource"].endswith("/v1/fix")
+    assert fix_res["inputSchema"]["example"] == FIX_COMPACT_INPUT_EXAMPLE
+    assert fix_res["outputSchema"]["example"] == FIX_COMPACT_OUTPUT_EXAMPLE
+    # Embedding must not mutate the shared schema constants.
+    assert "example" not in GRADE_INPUT_SCHEMA
+    assert "example" not in GRADE_OUTPUT_SCHEMA
+    assert "example" not in FIX_INPUT_SCHEMA
+    assert "example" not in FIX_OUTPUT_SCHEMA
