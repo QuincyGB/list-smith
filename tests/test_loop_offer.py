@@ -52,6 +52,14 @@ def test_grade_delivery_carries_the_block(monkeypatch):
 
     monkeypatch.setattr(main, "run_grade", fake)
     out = asyncio.run(main.grade(main.GradeRequest(resource_url=URL)))
+    # Since Next-20 #1/#5 the block attaches at the delivery layer
+    # (app/main.py's x402 middleware — see
+    # tests/test_loop_offer_fleetwide.py), NOT in the handlers: a
+    # handler alone returns the plain delivery, so the
+    # fleet-internal unpaid path that calls it directly carries no
+    # block. The attach function itself still adds it unchanged.
+    assert "verdict_row_loop" not in out
+    out = loop_offer.attach_loop_offer(out)
     assert out["grade"] == "A"  # original fields untouched
     block = out["verdict_row_loop"]
     assert _offers_by_id(block)["fleet_pass"]["price_usd"] == 5.0
@@ -66,7 +74,8 @@ def test_fix_delivery_carries_the_block(monkeypatch):
     req = main.FixRequest(resource_url=URL, sample_output={"ok": True})
     out = asyncio.run(main.fix(req))
     assert out["fixed"] is True
-    assert "verdict_row_loop" in out
+    assert "verdict_row_loop" not in out
+    assert "verdict_row_loop" in loop_offer.attach_loop_offer(out)
 
 
 def test_failed_delivery_has_no_block(monkeypatch):
