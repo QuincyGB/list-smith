@@ -61,7 +61,10 @@
         "grading",
         "validation",
         "discovery",
-        "agents"
+        "agents",
+        "manifest",
+        "preflight",
+        "listing-grade"
       ],
       "url": "https://list-smith-production.up.railway.app/v1/grade"
     },
@@ -92,7 +95,10 @@
         "repair",
         "schema",
         "discovery",
-        "agents"
+        "agents",
+        "manifest",
+        "listing-repair",
+        "schema-fix"
       ],
       "url": "https://list-smith-production.up.railway.app/v1/fix"
     }
