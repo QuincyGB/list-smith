@@ -59,6 +59,7 @@ from . import nudge as nudge_svc
 from .fixer import run_fix
 from .grader import run_grade
 from . import loop_offer as loop_offer_svc
+from . import delivery_ledger as delivery_ledger_svc
 from .nudge import NudgeStore, resolve_nudge_path
 from .probe import USER_AGENT, _fetch_once, _shared_client
 
@@ -476,12 +477,39 @@ async def x402_middleware(request: Request, call_next):
             await _fleet_pass.refund(debit)
             return response
         pass_id = (request.headers.get(_fleet_pass.PASS_HEADER) or "").strip()
-        return await _attach_loop_offer(
+        response = await _attach_loop_offer(
             request, response, credential=("fleet-pass", pass_id)
         )
+        try:
+            await delivery_ledger_svc.record_for_delivery(
+                request,
+                response,
+                service=settings.service_name,
+                price_units=PRICE_UNITS,
+                credential=("fleet-pass", pass_id),
+                debit_id=debit,
+            )
+        except Exception:
+            # Fail-closed recording (2026-11-07): a delivery whose
+            # ledger record cannot be written must not keep the
+            # debit either — refund, then fail loudly.
+            await _fleet_pass.refund(debit)
+            raise
+        return response
     response = await _payment_middleware(request, call_next)
     response = _mirror_challenge_body(response)
-    return await _attach_loop_offer(request, response)
+    response = await _attach_loop_offer(request, response)
+    # Fail-closed delivery recording (2026-11-07): the settlement is
+    # recorded in the fleet delivery ledger before the delivery is
+    # released; a record failure raises and fails the delivery
+    # loudly rather than passing as a settled-but-unrecorded sale.
+    await delivery_ledger_svc.record_for_delivery(
+        request,
+        response,
+        service=settings.service_name,
+        price_units=PRICE_UNITS,
+    )
+    return response
 
 
 # Request-body cap (security audit 2026-10-25): every legitimate body in

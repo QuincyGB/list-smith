@@ -25,6 +25,7 @@ from fastapi.responses import JSONResponse
 from fastapi.testclient import TestClient
 
 import app.main as main
+from app import delivery_ledger as delivery_ledger_svc
 from app.fleet_pass import LEDGER_URL
 from app.nudge import NudgeStore
 
@@ -62,6 +63,16 @@ def _settled_client(monkeypatch, tmp_path, wallet=WALLET):
     monkeypatch.setattr(main, "_nudge_store", fresh)
     monkeypatch.setattr(main, "run_grade", _fake_grade)
     monkeypatch.setattr(main, "run_fix", _fake_fix)
+
+    # Fleet delivery-ledger recording (2026-11-07) is stubbed like
+    # the other delivery side effects in this harness; its own
+    # behavior is pinned by tests/test_delivery_ledger_recording.py.
+    async def _fake_record_delivery(payload):
+        return {"recorded": True}
+
+    monkeypatch.setattr(
+        delivery_ledger_svc, "record_delivery", _fake_record_delivery
+    )
 
     async def passthrough(request, call_next):
         request.state.payment_payload = _payload(wallet)
