@@ -604,15 +604,7 @@ def x402_manifest(settings: Settings, base_url: str) -> dict:
                 "scheme": "exact",
                 "mimeType": "application/json",
                 "description": (
-                    "Repair one x402 route's discovery metadata: a "
-                    "Bazaar extension with a full output schema inferred "
-                    "from your sample, a sub-500-char description with a "
-                    "use-when sentence, OpenAPI and well-known snippets, "
-                    "and paste-in instructions. Send mode 'compact' for "
-                    "the repaired fields only (description, extension "
-                    "info, changes) in a smaller response. Ships only if "
-                    "it passes both x402 SDK validators. Use this when "
-                    "your listing is hollow, invalid, or invisible."
+                    "Repair one x402 route's discovery metadata: a Bazaar extension with a full output schema inferred from your sample, a sub-500-char description with a use-when sentence, OpenAPI and well-known snippets, and paste-in snippets. Send mode 'compact' for the repaired fields only (description, extension info, changes) in a smaller response. Ships only if it passes both x402 SDK validators. Use this when your listing is hollow, invalid, or invisible."
                 ),
                 "tags": ["x402", "bazaar", "repair", "schema", "discovery", "agents", "manifest", "listing-repair", "schema-fix"],
                 "accepts": accepts(settings.fix_price_usdc),
