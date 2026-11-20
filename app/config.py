@@ -81,8 +81,8 @@ def load_settings() -> Settings:
 
     return Settings(
         pay_to=pay_to,
-        grade_price_usdc=os.environ.get("X402_GRADE_PRICE_USDC", "$0.10").strip(),
-        fix_price_usdc=os.environ.get("X402_FIX_PRICE_USDC", "$0.50").strip(),
+        grade_price_usdc=os.environ.get("X402_GRADE_PRICE_USDC", "$0.03").strip(),
+        fix_price_usdc=os.environ.get("X402_FIX_PRICE_USDC", "$0.10").strip(),
         network=network,
         facilitator_url=facilitator_url,
         service_name=os.environ.get("X402_SERVICE_NAME", "list-smith").strip(),

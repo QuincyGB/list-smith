@@ -1,5 +1,5 @@
 """The paywall contract: unpaid calls to either route get a 402 whose
-accepts carry ListSmith's exact terms ($0.10 grade / $0.50 fix, USDC on
+accepts carry ListSmith's exact terms ($0.03 grade / $0.10 fix, USDC on
 Base, owner payTo) and the full Bazaar discovery extension; free routes
 stay open.
 
@@ -45,7 +45,7 @@ def _assert_accepts(challenge, amount):
 def test_unpaid_grade_is_paywalled_at_10_cents(client):
     r = client.post("/v1/grade", json={"resource_url": "https://target.example.com/v1/thing"})
     assert r.status_code == 402
-    _assert_accepts(_challenge(r), "100000")  # $0.10 in USDC smallest units
+    _assert_accepts(_challenge(r), "30000")  # $0.03 in USDC smallest units
 
 
 def test_unpaid_fix_is_paywalled_at_50_cents(client):
@@ -54,7 +54,7 @@ def test_unpaid_fix_is_paywalled_at_50_cents(client):
         json={"resource_url": "https://target.example.com/v1/thing", "sample_output": {"a": 1}},
     )
     assert r.status_code == 402
-    _assert_accepts(_challenge(r), "500000")  # $0.50 in USDC smallest units
+    _assert_accepts(_challenge(r), "100000")  # $0.10 in USDC smallest units
 
 
 def test_402s_carry_full_bazaar_extensions(client):
@@ -79,7 +79,7 @@ def test_free_routes_stay_open(client):
     quote = client.get("/quote")
     assert quote.status_code == 200
     body = quote.json()
-    assert body["endpoints"]["/v1/grade"]["price"] == "$0.10"
-    assert body["endpoints"]["/v1/fix"]["price"] == "$0.50"
+    assert body["endpoints"]["/v1/grade"]["price"] == "$0.03"
+    assert body["endpoints"]["/v1/fix"]["price"] == "$0.10"
     assert body["payTo"] == OWNER
     assert client.get("/").status_code == 200

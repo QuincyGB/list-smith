@@ -21,8 +21,8 @@ patterns, same payout wallet.
 
 | Route | Price | Purpose |
 |---|---|---|
-| `POST /v1/grade` | **$0.10 USDC** | Diagnosis only: what is broken, itemized |
-| `POST /v1/fix` | **$0.50 USDC** | The repaired discovery package |
+| `POST /v1/grade` | **$0.03 USDC** | Diagnosis only: what is broken, itemized |
+| `POST /v1/fix` | **$0.10 USDC** | The repaired discovery package |
 | `GET /quote` | free | Prices, asset, network, pay-to wallet |
 | `GET /.well-known/x402` | free | Machine-readable manifest (full schemas) |
 | `GET /skill.md` | free | Documentation written for agents |
@@ -30,18 +30,18 @@ patterns, same payout wallet.
 | `GET /health` | free | Liveness |
 
 **Why these prices:** the grade is deliberately priced at impulse
-level — $0.10, ten times the Bazaar's $0.01 median call — because it
+level — $0.03, three times the Bazaar's $0.01 median call — because it
 is the top of the funnel, its marginal cost is one unpaid probe, and
 every grade report ends with the exact list of defects the fix
-removes; the fix is where the value (and the price) sits: $0.50 is a
+removes; the fix is where the value (and the price) sits: $0.10 is a
 one-time seller-tooling purchase, not a per-call commodity, priced
 against the cost of the alternative — debugging facilitator validation
 blind, or staying invisible in the catalog — and against what
 expertise endpoints already command in this economy (the leading
 security-analysis route prices at a premium; the ai_search pocket
 averages ~$0.06/call against a $0.01 catalog median). A seller who
-fixes their listing once amortizes $0.50 over every future call the
-listing earns; a grade that comes back clean costs the seller a dime
+fixes their listing once amortizes $0.10 over every future call the
+listing earns; a grade that comes back clean costs the seller three cents
 and buys certainty. Neither price chases the $0.01 commodity floor —
 ListSmith sells seller tooling, not calls.
 
@@ -142,8 +142,8 @@ python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
 ```
 
 Key env (see `.env.example`): `X402_PAY_TO` (payout wallet),
-`X402_GRADE_PRICE_USDC` (default `$0.10`), `X402_FIX_PRICE_USDC`
-(default `$0.50`), `X402_FACILITATOR_URL`, `CDP_API_KEY_ID` /
+`X402_GRADE_PRICE_USDC` (default `$0.03`), `X402_FIX_PRICE_USDC`
+(default `$0.10`), `X402_FACILITATOR_URL`, `CDP_API_KEY_ID` /
 `CDP_API_KEY_SECRET`, `LISTSMITH_FETCH_TIMEOUT_S`.
 
 Production runs on Railway from the included `Dockerfile`

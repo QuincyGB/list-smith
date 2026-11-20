@@ -3,7 +3,7 @@ than anything it grades:
 
   * facilitator selection is config-driven (PayAI by URL alone, CDP only
     with URL + both keys, keyless default otherwise), prices are the
-    decided $0.10 / $0.50;
+    decided $0.03 / $0.10;
   * every description stays UNDER 500 chars and carries a use-when line;
   * BOTH routes' bazaar extensions carry full typed output schemas, pass
     the x402 SDK validators, and their shipped examples are real outputs
@@ -81,8 +81,8 @@ def test_cdp_needs_url_and_both_keys():
 def test_defaults_are_listsmith_terms():
     s = _settings()
     assert s.pay_to == OWNER
-    assert s.grade_price_usdc == "$0.10"
-    assert s.fix_price_usdc == "$0.50"
+    assert s.grade_price_usdc == "$0.03"
+    assert s.fix_price_usdc == "$0.10"
     assert s.network == "eip155:8453"
     assert s.service_name == "list-smith"
 
@@ -233,13 +233,13 @@ def test_manifest_lists_both_routes_with_exact_prices(client):
     body = resp.json()
     assert body["service"] == "list-smith"
     grade_res, fix_res = body["resources"][0], body["resources"][1]
-    assert grade_res["price"] == "$0.10"
-    assert grade_res["accepts"][0]["amount"] == "100000"
+    assert grade_res["price"] == "$0.03"
+    assert grade_res["accepts"][0]["amount"] == "30000"
     assert grade_res["accepts"][0]["payTo"] == OWNER
     assert grade_res["outputSchema"] == {**GRADE_OUTPUT_SCHEMA, "example": GRADE_OUTPUT_EXAMPLE}
     assert grade_res["inputSchema"] == {**GRADE_INPUT_SCHEMA, "example": GRADE_INPUT_EXAMPLE}
-    assert fix_res["price"] == "$0.50"
-    assert fix_res["accepts"][0]["amount"] == "500000"
+    assert fix_res["price"] == "$0.10"
+    assert fix_res["accepts"][0]["amount"] == "100000"
     assert fix_res["accepts"][0]["payTo"] == OWNER
     assert fix_res["outputSchema"] == {**FIX_OUTPUT_SCHEMA, "example": FIX_COMPACT_OUTPUT_EXAMPLE}
     assert fix_res["inputSchema"] == {**FIX_INPUT_SCHEMA, "example": FIX_COMPACT_INPUT_EXAMPLE}

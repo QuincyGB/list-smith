@@ -23,12 +23,12 @@
   },
   "services": [
     {
-      "amount": "100000",
+      "amount": "30000",
       "endpoint": "https://list-smith-production.up.railway.app/v1/grade",
       "name": "/v1/grade"
     },
     {
-      "amount": "500000",
+      "amount": "100000",
       "endpoint": "https://list-smith-production.up.railway.app/v1/fix",
       "name": "/v1/fix"
     }
@@ -46,14 +46,14 @@
         "application/json"
       ],
       "price": {
-        "amount_units": "100000",
+        "amount_units": "30000",
         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        "display": "$0.10",
+        "display": "$0.03",
         "network": "eip155:8453",
         "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
         "protocol": "x402",
         "scheme": "exact",
-        "usd": "0.1"
+        "usd": "0.03"
       },
       "tags": [
         "x402",
@@ -80,14 +80,14 @@
         "application/json"
       ],
       "price": {
-        "amount_units": "500000",
+        "amount_units": "100000",
         "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-        "display": "$0.50",
+        "display": "$0.10",
         "network": "eip155:8453",
         "payTo": "0x097f9685D1e0752bF8B02d61E5Ce9be7eA0FBA7F",
         "protocol": "x402",
         "scheme": "exact",
-        "usd": "0.5"
+        "usd": "0.1"
       },
       "tags": [
         "x402",

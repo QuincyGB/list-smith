@@ -100,7 +100,7 @@ def test_per_call_fix_delivery_carries_block(monkeypatch, tmp_path):
     assert r.status_code == 200, r.text
     block = r.json()["verdict_row_loop"]
     offers = {o["id"]: o for o in block["offers"]}
-    assert offers["recheck_pack"]["price_usd"] == 1.0
+    assert offers["recheck_pack"]["price_usd"] == 0.10
     assert offers["fleet_pass"]["url"] == f"{LEDGER_URL}/v1/fleet-pass"
     # First-time payer: the static block, no personalised section.
     assert "returning_payer" not in block
@@ -165,7 +165,7 @@ def test_second_delivery_same_route_is_personalised(monkeypatch, tmp_path):
 
     offer = rp["adaptive_offer"]
     assert offer["credits"] == 250
-    assert offer["price_usd"] == 1.0
+    assert offer["price_usd"] == 0.10
     assert offer["deep_link"] == f"{LEDGER_URL}/v1/recheck/pack?payer={WALLET}"
     assert offer["webhook_deep_link"] == (
         f"{LEDGER_URL}/v1/recheck/webhooks?payer={WALLET}"
@@ -255,7 +255,7 @@ def test_unpaid_challenges_carry_no_block_and_record_nothing(
         accept = challenge["accepts"][0]
         assert accept["amount"] == str(units), path
         assert accept["payTo"] == OWNER, path
-    assert GRADE_UNITS == 100000 and FIX_UNITS == 500000
+    assert GRADE_UNITS == 30000 and FIX_UNITS == 100000
     assert fresh.payer_history(WALLET) is None
 
 

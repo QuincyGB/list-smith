@@ -232,7 +232,7 @@ _PASS_PATHS = {"/v1/grade", "/v1/fix"}
 
 
 def _price_units(price: str) -> int:
-    """USDC smallest units for a settings price string ("$0.10" ->
+    """USDC smallest units for a settings price string ("$0.03" ->
     100000) — derived from the same string the x402 route charges,
     never restated by hand."""
     return int(round(float(price.strip().lstrip("$")) * 1_000_000))
@@ -561,7 +561,7 @@ LANDING_HTML = """<!DOCTYPE html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ListSmith — listing grades &amp; repairs for x402 services</title>
-<meta name="description" content="Your x402 route is discoverable only if its 402 carries a valid Bazaar discovery extension. Most are hollow, over-length, or invalid — and the seller just never gets calls. ListSmith grades it for $0.10 and sells the validated fix for $0.50.">
+<meta name="description" content="Your x402 route is discoverable only if its 402 carries a valid Bazaar discovery extension. Most are hollow, over-length, or invalid — and the seller just never gets calls. ListSmith grades it for $0.03 and sells the validated fix for $0.10.">
 <style>
   body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
          max-width: 760px; margin: 40px auto; padding: 0 20px 60px;
@@ -594,17 +594,17 @@ No accounts, no API keys: <em>payment is the authentication.</em></p>
 
 <p><span class="pill">Live on Base mainnet</span>
 <span class="pill">x402 v2 · exact scheme</span>
-<span class="pill">Grade $0.10 · Fix $0.50</span>
+<span class="pill">Grade $0.03 · Fix $0.10</span>
 <span class="pill">Observation only — never pays the target</span></p>
 
 <h2>The two routes</h2>
 <table>
   <tr><th>Route</th><th>Price</th><th>What you get</th></tr>
-  <tr><td><code>POST /v1/grade</code></td><td>$0.10</td>
+  <tr><td><code>POST /v1/grade</code></td><td>$0.03</td>
       <td>The diagnosis: both x402 SDK validator verdicts, schema-quality
       score, itemized defects with severities, a 0-100 grade. No repaired
       content.</td></tr>
-  <tr><td><code>POST /v1/fix</code></td><td>$0.50</td>
+  <tr><td><code>POST /v1/fix</code></td><td>$0.10</td>
       <td>The repair: a complete discovery package — full output schema
       inferred from one real sample output, a sub-500-char description
       with a use-when sentence, OpenAPI + well-known snippets, paste-in
@@ -623,8 +623,8 @@ comes back. The target endpoint is probed unpaid and is never charged.</p>
 <h2>Endpoints</h2>
 <table>
   <tr><th>Route</th><th>Price</th><th>Purpose</th></tr>
-  <tr><td><code>POST /v1/grade</code></td><td>$0.10</td><td>Grade one route's discovery metadata (paid, x402)</td></tr>
-  <tr><td><code>POST /v1/fix</code></td><td>$0.50</td><td>Repair one route's discovery metadata (paid, x402)</td></tr>
+  <tr><td><code>POST /v1/grade</code></td><td>$0.03</td><td>Grade one route's discovery metadata (paid, x402)</td></tr>
+  <tr><td><code>POST /v1/fix</code></td><td>$0.10</td><td>Repair one route's discovery metadata (paid, x402)</td></tr>
   <tr><td><code>GET /quote</code></td><td>free</td><td>Prices, asset, network, pay-to wallet</td></tr>
   <tr><td><code>GET /.well-known/x402</code></td><td>free</td><td>Machine-readable service manifest</td></tr>
   <tr><td><code>GET /skill.md</code></td><td>free</td><td>Documentation written for agents</td></tr>
